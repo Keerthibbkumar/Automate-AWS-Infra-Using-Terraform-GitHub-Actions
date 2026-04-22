@@ -83,6 +83,7 @@ resource "aws_instance" "name" {
     instance_type = var.instance_type
     ami = var.ami
     count = 2
+    user_data = file("install_nginx.sh")
     vpc_security_group_ids = [aws_security_group.sgw.id]
     subnet_id = aws_subnet.ps[count.index].id
     tags = {
