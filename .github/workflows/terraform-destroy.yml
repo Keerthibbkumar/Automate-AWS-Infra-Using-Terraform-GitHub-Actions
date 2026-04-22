@@ -4,14 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       confirm_destroy:
-        description: 'Type "DESTROY" to confirm'
+        description: 'Type DESTROY to confirm'
         required: true
         type: string
 
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm_destroy == 'DESTROY'
+
+    if: ${{ inputs.confirm_destroy == 'DESTROY' }}
 
     steps:
       - name: Checkout Code
