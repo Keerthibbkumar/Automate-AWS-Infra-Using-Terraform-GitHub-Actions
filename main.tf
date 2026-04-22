@@ -18,6 +18,7 @@ resource "aws_subnet" "ps" {
   cidr_block = var.pub_cidr_blocks[count.index]
   availability_zone = var.avz_zone[count.index]
   enable_resource_name_dns_a_record_on_launch = true
+  map_public_ip_on_launch = true
   tags = {
     Name = "ALB-PROJ-PS-${count.index + 1}"
   }
@@ -83,6 +84,7 @@ resource "aws_instance" "name" {
     instance_type = var.instance_type
     ami = var.ami
     count = 2
+    associate_public_ip_address = true
     user_data = file("install_nginx.sh")
     vpc_security_group_ids = [aws_security_group.sgw.id]
     subnet_id = aws_subnet.ps[count.index].id
