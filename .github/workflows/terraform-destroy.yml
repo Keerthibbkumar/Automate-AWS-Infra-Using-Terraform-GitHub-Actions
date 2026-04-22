@@ -8,31 +8,65 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
-  terraform-destroy:
+
+  fmt:
+    name: Terraform Format
     runs-on: ubuntu-latest
 
-    if: ${{ inputs.confirm_destroy == 'DESTROY' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check
+
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    needs: fmt
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false
+      - run: terraform validate
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+  plan-destroy:
+    name: Terraform Destroy Plan
+    runs-on: ubuntu-latest
+    needs: validate
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      - uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Terraform Init
-        run: terraform init
+      - run: terraform init -input=false
+      - run: terraform plan -destroy
 
-      - name: Terraform Plan Destroy
-        run: terraform plan -destroy
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    needs: plan-destroy
 
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve
+    if: ${{ inputs.confirm_destroy == 'DESTROY' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - run: terraform init -input=false
+      - run: terraform destroy -auto-approve -input=false
